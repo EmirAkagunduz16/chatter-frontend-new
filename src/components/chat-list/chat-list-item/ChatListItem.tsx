@@ -9,12 +9,17 @@ import {
 } from "@mui/material";
 import router from "../../Routes";
 import { ChatFragmentFragment as Chat } from "../../../gql/graphql";
+import { useGetMe } from "../../../hooks/useGetMe";
 
 interface ChatListProps {
   chat: Chat;
   selected: boolean;
 }
 const ChatListItem = ({ chat, selected }: ChatListProps) => {
+  const { data } = useGetMe();
+  const isOwnMessage =
+    !!chat.latestMessage && chat.latestMessage.user._id === data?.me._id;
+
   return (
     <>
       <ListItem
@@ -40,18 +45,19 @@ const ChatListItem = ({ chat, selected }: ChatListProps) => {
                   variant="body2"
                   sx={{ color: "text.primary", display: "inline" }}
                 >
-                  Ali Connors
+                  {chat.latestMessage
+                    ? isOwnMessage
+                      ? "You:"
+                      : chat.latestMessage.user.username + ":"
+                    : ""}
                 </Typography>
-                {" — I'll be in your neighborhood doing errands this…"}
+                {" " + (chat.latestMessage?.content ?? "")}
               </>
             }
           />
         </ListItemButton>
       </ListItem>
-      <Divider
-        variant="inset"
-        component="li"
-      />
+      <Divider variant="inset" />
     </>
   );
 };

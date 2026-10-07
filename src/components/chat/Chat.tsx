@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { useGetChat } from "../../hooks/useGetChat";
 import {
@@ -16,23 +16,31 @@ import SendIcon from "@mui/icons-material/Send";
 import { useCreateMessage } from "../../hooks/useCreateMessage";
 import { useGetMessages } from "../../hooks/useGetMessages";
 import { scrollbarStyles } from "../../styles/scrollbar";
+import { MessagesQuery } from "../../gql/graphql";
 
 const Chat = () => {
   const params = useParams();
   const [message, setMessage] = useState("");
   const chatId = params._id!;
   const { data } = useGetChat({ _id: chatId });
-  const [createMessage] = useCreateMessage(chatId);
-  const { data: messages } = useGetMessages({ chatId });
+  const [createMessage] = useCreateMessage();
+  const { data: existingMessages } = useGetMessages({ chatId });
+  const [messages, setMessages] = useState<MessagesQuery["messages"]>([]);
   const divRef = useRef<HTMLDivElement | null>(null);
   const location = useLocation();
+
+  useEffect(() => {
+    if (existingMessages) {
+      setMessages(existingMessages.messages);
+    }
+  }, [existingMessages]);
+
+  const scrollToBottom = () => divRef.current?.scrollIntoView();
 
   useEffect(() => {
     setMessage("");
     scrollToBottom();
   }, [location, messages]);
-
-  const scrollToBottom = () => divRef.current?.scrollIntoView();
 
   const handleCreateMessage = async () => {
     await createMessage({
@@ -64,36 +72,43 @@ const Chat = () => {
           overflow: "auto",
         })}
       >
-        {messages?.messages.map((message) => (
-          <Grid
-            container
-            sx={{ alignItems: "center", marginBottom: "1rem" }}
-          >
-            <Grid size={{ xs: 2, lg: 1 }}>
-              <Avatar
-                src=""
-                sx={{ height: 52, width: 52 }}
-              />
-            </Grid>
-            <Grid size={{ xs: 10, lg: 11 }}>
-              <Stack>
-                <Paper sx={{ width: "fit-content" }}>
-                  <Typography sx={{ padding: "0.9rem" }}>
-                    {message.content}
-                  </Typography>
-                </Paper>
-                <Typography
-                  variant="caption"
-                  sx={{ marginLeft: "0.25rem" }}
-                >
-                  {new Date(
-                    message.createdAt as unknown as Date,
-                  ).toLocaleTimeString()}
-                </Typography>
-              </Stack>
-            </Grid>
-          </Grid>
-        ))}
+        {messages &&
+          [...messages]
+            .sort(
+              (messageA, messageB) =>
+                new Date(messageA.createdAt as unknown as Date).getTime() -
+                new Date(messageB.createdAt as unknown as Date).getTime(),
+            )
+            .map((message) => (
+              <Grid
+                container
+                sx={{ alignItems: "center", marginBottom: "1rem" }}
+              >
+                <Grid size={{ xs: 2, lg: 1 }}>
+                  <Avatar
+                    src=""
+                    sx={{ height: 52, width: 52 }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 10, lg: 11 }}>
+                  <Stack>
+                    <Paper sx={{ width: "fit-content" }}>
+                      <Typography sx={{ padding: "0.9rem" }}>
+                        {message.content}
+                      </Typography>
+                    </Paper>
+                    <Typography
+                      variant="caption"
+                      sx={{ marginLeft: "0.25rem" }}
+                    >
+                      {new Date(
+                        message.createdAt as unknown as Date,
+                      ).toLocaleTimeString()}
+                    </Typography>
+                  </Stack>
+                </Grid>
+              </Grid>
+            ))}
         <div ref={divRef}></div>
       </Box>
       <Paper
