@@ -1,5 +1,6 @@
 import {
   Avatar,
+  Box,
   Divider,
   ListItem,
   ListItemAvatar,
@@ -10,6 +11,7 @@ import {
 import router from "../../Routes";
 import { ChatFragmentFragment as Chat } from "../../../gql/graphql";
 import { useGetMe } from "../../../hooks/useGetMe";
+import "./ChatListItem.css";
 
 interface ChatListProps {
   chat: Chat;
@@ -39,7 +41,13 @@ const ChatListItem = ({ chat, selected }: ChatListProps) => {
           <ListItemText
             primary={chat.name}
             secondary={
-              <>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "flex-row",
+                  gap: "0.5rem",
+                }}
+              >
                 <Typography
                   component="span"
                   variant="body2"
@@ -51,8 +59,10 @@ const ChatListItem = ({ chat, selected }: ChatListProps) => {
                       : chat.latestMessage.user.username + ":"
                     : ""}
                 </Typography>
-                {" " + (chat.latestMessage?.content ?? "")}
-              </>
+                <div className="content">
+                  {" " + (chat.latestMessage?.content ?? "")}
+                </div>
+              </Box>
             }
           />
         </ListItemButton>

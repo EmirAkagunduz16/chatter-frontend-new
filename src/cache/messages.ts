@@ -1,6 +1,7 @@
 import type { ApolloCache } from "@apollo/client";
 import type { MessageFragmentFragment } from "../gql/graphql";
 import { getMessagesDocument } from "../hooks/useGetMessages";
+import { PAGE_SIZE } from "../constants/page-size";
 
 export const updateMessages = (
   cache: ApolloCache,
@@ -10,6 +11,8 @@ export const updateMessages = (
     query: getMessagesDocument,
     variables: {
       chatId: message.chatId,
+      skip: 0,
+      limit: PAGE_SIZE,
     },
   };
   const messages = cache.readQuery({

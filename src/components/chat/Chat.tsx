@@ -17,6 +17,11 @@ import { useCreateMessage } from "../../hooks/useCreateMessage";
 import { useGetMessages } from "../../hooks/useGetMessages";
 import { scrollbarStyles } from "../../styles/scrollbar";
 import { MessagesQuery } from "../../gql/graphql";
+import { PAGE_SIZE } from "../../constants/page-size";
+import { useCountMessages } from "../../hooks/useCountMessages";
+import InfiniteScroll from "react-infinite-scroller";
+import { UNKNOWN_ERROR_SNACK_MESSAGE } from "../../constants/errors";
+import { snackVar } from "../../constants/snack";
 
 const Chat = () => {
   const params = useParams();
@@ -24,10 +29,46 @@ const Chat = () => {
   const chatId = params._id!;
   const { data } = useGetChat({ _id: chatId });
   const [createMessage] = useCreateMessage();
-  const { data: existingMessages } = useGetMessages({ chatId });
+  const {
+    data: existingMessages,
+    fetchMore,
+    loading,
+    error,
+  } = useGetMessages({
+    chatId,
+    skip: 0,
+    limit: PAGE_SIZE,
+  });
+  const fetchingMore = useRef(false);
   const [messages, setMessages] = useState<MessagesQuery["messages"]>([]);
   const divRef = useRef<HTMLDivElement | null>(null);
+  const [paginationFailed, setPaginationFailed] = useState(false);
   const location = useLocation();
+  const { messagesCount, countMessages } = useCountMessages(chatId);
+
+  const loadMore = async () => {
+    if (loading || !data || fetchingMore.current || paginationFailed) {
+      return;
+    }
+    fetchingMore.current = true;
+    try {
+      await fetchMore({
+        variables: {
+          skip: messages?.length,
+          limit: PAGE_SIZE,
+        },
+      });
+    } catch {
+      setPaginationFailed(true);
+      snackVar(UNKNOWN_ERROR_SNACK_MESSAGE);
+    } finally {
+      fetchingMore.current = false;
+    }
+  };
+
+  useEffect(() => {
+    countMessages();
+  }, [countMessages]);
 
   useEffect(() => {
     if (existingMessages) {
@@ -38,11 +79,17 @@ const Chat = () => {
   const scrollToBottom = () => divRef.current?.scrollIntoView();
 
   useEffect(() => {
-    setMessage("");
-    scrollToBottom();
+    if (messages && messages.length <= PAGE_SIZE) {
+      setMessage("");
+      scrollToBottom();
+    }
   }, [location, messages]);
 
   const handleCreateMessage = async () => {
+    if (!message.trim()) {
+      return;
+    }
+
     await createMessage({
       variables: { createMessageInput: { content: message, chatId } },
     });
@@ -72,43 +119,64 @@ const Chat = () => {
           overflow: "auto",
         })}
       >
-        {messages &&
-          [...messages]
-            .sort(
-              (messageA, messageB) =>
-                new Date(messageA.createdAt as unknown as Date).getTime() -
-                new Date(messageB.createdAt as unknown as Date).getTime(),
-            )
-            .map((message) => (
-              <Grid
-                container
-                sx={{ alignItems: "center", marginBottom: "1rem" }}
-              >
-                <Grid size={{ xs: 2, lg: 1 }}>
-                  <Avatar
-                    src=""
-                    sx={{ height: 52, width: 52 }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 10, lg: 11 }}>
-                  <Stack>
-                    <Paper sx={{ width: "fit-content" }}>
-                      <Typography sx={{ padding: "0.9rem" }}>
-                        {message.content}
+        <InfiniteScroll
+          pageStart={0}
+          isReverse={true}
+          loadMore={loadMore}
+          hasMore={
+            !loading &&
+            !error &&
+            !paginationFailed &&
+            !!data &&
+            messages &&
+            messagesCount
+              ? messages.length < messagesCount
+              : false
+          }
+          useWindow={false}
+        >
+          {messages &&
+            [...messages]
+              .sort(
+                (messageA, messageB) =>
+                  new Date(messageA.createdAt as unknown as Date).getTime() -
+                  new Date(messageB.createdAt as unknown as Date).getTime(),
+              )
+              .map((message) => (
+                <Grid
+                  container
+                  sx={{ alignItems: "center", marginBottom: "1rem" }}
+                >
+                  <Grid size={{ xs: 2, lg: 1 }}>
+                    <Avatar
+                      src=""
+                      sx={{ height: 52, width: 52 }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 10, lg: 11 }}>
+                    <Stack>
+                      <Paper sx={{ width: "fit-content" }}>
+                        <Typography sx={{ padding: "0.9rem" }}>
+                          {message.content}
+                        </Typography>
+                      </Paper>
+                      <Typography
+                        variant="caption"
+                        sx={{ marginLeft: "0.25rem" }}
+                      >
+                        {new Date(
+                          message.createdAt as unknown as Date,
+                        ).toLocaleTimeString()}{" "}
+                        -{" "}
+                        {new Date(
+                          message.createdAt as unknown as Date,
+                        ).toLocaleDateString()}
                       </Typography>
-                    </Paper>
-                    <Typography
-                      variant="caption"
-                      sx={{ marginLeft: "0.25rem" }}
-                    >
-                      {new Date(
-                        message.createdAt as unknown as Date,
-                      ).toLocaleTimeString()}
-                    </Typography>
-                  </Stack>
+                    </Stack>
+                  </Grid>
                 </Grid>
-              </Grid>
-            ))}
+              ))}
+        </InfiniteScroll>
         <div ref={divRef}></div>
       </Box>
       <Paper
@@ -138,6 +206,7 @@ const Chat = () => {
         />
         <IconButton
           onClick={handleCreateMessage}
+          disabled={!message.trim()}
           color="primary"
           sx={{ p: "10px" }}
         >
