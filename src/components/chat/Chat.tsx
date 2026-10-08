@@ -41,6 +41,12 @@ const Chat = () => {
   });
   const fetchingMore = useRef(false);
   const [messages, setMessages] = useState<MessagesQuery["messages"]>([]);
+  const sortedMessages = [...messages].sort(
+    (messageA, messageB) =>
+      new Date(messageA.createdAt as unknown as Date).getTime() -
+      new Date(messageB.createdAt as unknown as Date).getTime(),
+  );
+  const latestMessageId = sortedMessages[sortedMessages.length - 1]?._id;
   const divRef = useRef<HTMLDivElement | null>(null);
   const [paginationFailed, setPaginationFailed] = useState(false);
   const location = useLocation();
@@ -79,11 +85,12 @@ const Chat = () => {
   const scrollToBottom = () => divRef.current?.scrollIntoView();
 
   useEffect(() => {
-    if (messages && messages.length <= PAGE_SIZE) {
-      setMessage("");
-      scrollToBottom();
-    }
-  }, [location, messages]);
+    setMessage("");
+  }, [location]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [location, latestMessageId]);
 
   const handleCreateMessage = async () => {
     if (!message.trim()) {
@@ -102,6 +109,7 @@ const Chat = () => {
       sx={{
         height: { xs: "calc(100dvh - 56px)", md: "100%" },
         minHeight: 0,
+        minWidth: 0,
       }}
     >
       <Typography
@@ -116,7 +124,10 @@ const Chat = () => {
           ...scrollbarStyles(theme),
           flex: 1,
           minHeight: 0,
-          overflow: "auto",
+          minWidth: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          padding: "1rem",
         })}
       >
         <InfiniteScroll
@@ -135,47 +146,53 @@ const Chat = () => {
           }
           useWindow={false}
         >
-          {messages &&
-            [...messages]
-              .sort(
-                (messageA, messageB) =>
-                  new Date(messageA.createdAt as unknown as Date).getTime() -
-                  new Date(messageB.createdAt as unknown as Date).getTime(),
-              )
-              .map((message) => (
-                <Grid
-                  container
-                  sx={{ alignItems: "center", marginBottom: "1rem" }}
-                >
-                  <Grid size={{ xs: 2, lg: 1 }}>
-                    <Avatar
-                      src=""
-                      sx={{ height: 52, width: 52 }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 10, lg: 11 }}>
-                    <Stack>
-                      <Paper sx={{ width: "fit-content" }}>
-                        <Typography sx={{ padding: "0.9rem" }}>
-                          {message.content}
-                        </Typography>
-                      </Paper>
-                      <Typography
-                        variant="caption"
-                        sx={{ marginLeft: "0.25rem" }}
-                      >
-                        {new Date(
-                          message.createdAt as unknown as Date,
-                        ).toLocaleTimeString()}{" "}
-                        -{" "}
-                        {new Date(
-                          message.createdAt as unknown as Date,
-                        ).toLocaleDateString()}
-                      </Typography>
-                    </Stack>
-                  </Grid>
-                </Grid>
-              ))}
+          {sortedMessages.map((message) => (
+            <Grid
+              key={message._id}
+              container
+              sx={{
+                alignItems: "center",
+                marginBottom: "1rem",
+              }}
+            >
+              <Grid size={{ xs: 2, lg: 1 }}>
+                <Avatar
+                  src=""
+                  sx={{ height: 52, width: 52 }}
+                />
+              </Grid>
+              <Grid
+                size={{ xs: 10, lg: 11 }}
+                sx={{ minWidth: 0 }}
+              >
+                <Stack>
+                  <Paper sx={{ width: "fit-content", maxWidth: "100%" }}>
+                    <Typography
+                      sx={{
+                        padding: "0.9rem",
+                        overflowWrap: "anywhere",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {message.content}
+                    </Typography>
+                  </Paper>
+                  <Typography
+                    variant="caption"
+                    sx={{ marginLeft: "0.25rem" }}
+                  >
+                    {new Date(
+                      message.createdAt as unknown as Date,
+                    ).toLocaleTimeString()}{" "}
+                    -{" "}
+                    {new Date(
+                      message.createdAt as unknown as Date,
+                    ).toLocaleDateString()}
+                  </Typography>
+                </Stack>
+              </Grid>
+            </Grid>
+          ))}
         </InfiniteScroll>
         <div ref={divRef}></div>
       </Box>
