@@ -10,6 +10,7 @@ import { useLogout } from "../../hooks/useLogout";
 import { onLogout } from "../../utils/logout";
 import { snackVar } from "../../constants/snack";
 import { UNKNOWN_ERROR_SNACK_MESSAGE } from "../../constants/errors";
+import router from "../Routes";
 
 interface SettingsProps {
   settings: string[];
@@ -56,6 +57,12 @@ const Settings = ({ settings }: SettingsProps) => {
         open={Boolean(anchorElUser)}
         onClose={handleCloseUserMenu}
       >
+        <MenuItem
+          key={"settings"}
+          onClick={() => router.navigate("/profile")}
+        >
+          <Typography sx={{ textAlign: "center" }}>Settings</Typography>
+        </MenuItem>
         <MenuItem
           key={"logout"}
           onClick={async () => {

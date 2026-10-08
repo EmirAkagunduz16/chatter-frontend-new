@@ -154,12 +154,21 @@ const Chat = () => {
                 alignItems: "center",
                 marginBottom: "1rem",
               }}
+              spacing={1}
             >
               <Grid size={{ xs: 2, lg: 1 }}>
-                <Avatar
-                  src=""
-                  sx={{ height: 52, width: 52 }}
-                />
+                <Stack
+                  sx={{ alignItems: "center", justifyContent: "center" }}
+                  spacing={1}
+                >
+                  <Avatar
+                    src={message.user.imageUrl}
+                    sx={{ height: 52, width: 52 }}
+                  />
+                  <Typography variant="caption">
+                    {message.user.username}
+                  </Typography>
+                </Stack>
               </Grid>
               <Grid
                 size={{ xs: 10, lg: 11 }}

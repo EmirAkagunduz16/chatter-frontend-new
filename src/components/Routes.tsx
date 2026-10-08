@@ -4,6 +4,7 @@ import Login from "./auth/Login";
 import { Home } from "./home/Home";
 import Guard from "./auth/Guard";
 import Chat from "./chat/Chat";
+import Profile from "./profile/Profile";
 
 const router = createBrowserRouter([
   {
@@ -27,6 +28,14 @@ const router = createBrowserRouter([
     element: (
       <Guard>
         <Chat />
+      </Guard>
+    ),
+  },
+  {
+    path: "/profile",
+    element: (
+      <Guard>
+        <Profile />
       </Guard>
     ),
   },
