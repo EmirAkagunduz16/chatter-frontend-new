@@ -14,6 +14,8 @@ import excludedRoutes from "./excluded-routes";
 import { onLogout } from "../utils/logout";
 import { createClient } from "graphql-ws";
 import { getMainDefinition } from "@apollo/client/utilities";
+import { SetContextLink } from "@apollo/client/link/context";
+import { getToken } from "../utils/token";
 
 const logoutLink = new ErrorLink(({ error }) => {
   if (excludedRoutes.includes(window.location.pathname)) {
@@ -37,6 +39,15 @@ const logoutLink = new ErrorLink(({ error }) => {
   }
 });
 
+const authLink = new SetContextLink((prevContext, _) => {
+  return {
+    headers: {
+      ...prevContext.headers,
+      authorization: getToken(),
+    },
+  };
+});
+
 const httpLink = new HttpLink({ uri: `${API_URL}/graphql` });
 const wsLink = new GraphQLWsLink(
   createClient({
@@ -57,7 +68,7 @@ const splitLink = split(
 );
 
 const client = new ApolloClient({
-  link: ApolloLink.from([logoutLink, splitLink]),
+  link: ApolloLink.from([logoutLink, authLink, splitLink]),
   cache: new InMemoryCache({
     typePolicies: {
       Query: {

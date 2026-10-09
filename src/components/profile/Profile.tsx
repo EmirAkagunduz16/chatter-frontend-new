@@ -1,9 +1,9 @@
 import { Avatar, Button, Stack, Typography } from "@mui/material";
-import React from "react";
 import { useGetMe } from "../../hooks/useGetMe";
 import { UploadFile } from "@mui/icons-material";
 import { API_URL } from "../../constants/urls";
 import { snackVar } from "../../constants/snack";
+import { commonFetch } from "../../utils/fetch";
 
 const Profile = () => {
   const me = useGetMe();
@@ -12,7 +12,7 @@ const Profile = () => {
     try {
       const formData = new FormData();
       formData.append("file", event.target.files[0]);
-      const res = await fetch(`${API_URL}/users/image`, {
+      const res = await commonFetch(`${API_URL}/users/image`, {
         method: "POST",
         body: formData,
       });
